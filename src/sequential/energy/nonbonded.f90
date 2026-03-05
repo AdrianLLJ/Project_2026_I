@@ -3,7 +3,7 @@ module nonBonded
     ! This module defines and initialises all the variables related to the non-bonded interactions
     ! (i.e. Lennard-Jones potential) as well as all the functions/subroutines for computing the 
     ! non-bonded energy contribution. 
-    ! The current version only considers a C skeleton.
+    ! The current version only considers a C skeleton in bulk (implemented using PBC's).
     ! ---
     ! Variables/parameters:
     ! EPS   : the energy of the potential well. 
@@ -61,6 +61,19 @@ module nonBonded
         end if
     end subroutine enerLenJon
 
+    subroutine minImgConv(dx, dy, dz)
+        ! Applies the minimum image convention to assign Lennard-Jones
+        ! interactions between pairs of particles in a bulk system.
+        implicit none
+
+        double precision, intent(inout) :: dx, dy, dz
+
+        ! E.g. if dx < 0, then sign(BOX, dx) = -BOX, thus we add +BOX
+        if (abs(dx).gt.HBOX) dx = dx - sign(BOX, dx)
+        if (abs(dy).gt.HBOX) dy = dy - sign(BOX, dy)
+        if (abs(dz).gt.HBOX) dz = dz - sign(BOX, dz)
+    end subroutine minImgConv
+
     subroutine enerPart(Xi, Yi, Zi, I, Jb, enI)
         ! Computes the non-bonded energy contribution of one particle due to all other
         ! interacting particles (i.e. within the cutoff region).
@@ -76,15 +89,22 @@ module nonBonded
         double precision :: dx, dy, dz, r2, enIj
 
         enI = 0.d0
-        do j = Jb + 4, NPART
+        ! Shift of 3 to ensure we skip particles related by the same dihedral  
+        do j = Jb + 3, NPART
             if (j.ne.I) then
+                ! Relative displacement between particles I, j
                 dx = Xi - X(j)
                 dy = Yi - Y(j)
                 dz = Zi - Z(j)
+
+                ! PBC (minimum image convention)
+                call minImgConv(dx, dy, dz)
+
+                ! Lennard-Jones interaction between particles I, j
+                r2 = dx*dx + dy*dy + dz*dz
+                call enerLenJon(r2, enIj)
+                enI = enI + enIj
             end if
-            r2 = dx*dx + dy*dy + dz*dz
-            call enerLenJon(r2, enIj)
-            enI = enI + enIj
         end do
     end subroutine enerPart
 
