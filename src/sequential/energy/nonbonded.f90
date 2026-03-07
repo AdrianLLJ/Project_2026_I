@@ -3,7 +3,7 @@ module nonBonded
     ! This module defines and initialises all the variables related to the non-bonded interactions
     ! (i.e. Lennard-Jones potential) as well as all the functions/subroutines for computing the 
     ! non-bonded energy contribution. 
-    ! The current version only considers a C skeleton in bulk (implemented using PBC's).
+    ! The current version only considers a C skeleton.
     ! ---
     ! Variables/parameters:
     ! EPS   : the energy of the potential well. 
@@ -19,11 +19,13 @@ module nonBonded
     ! https://en.wikipedia.org/wiki/Lennard-Jones_potential#Dimensionless_(reduced_units)
     ! ---
     use constants
+    use system
     implicit none
 
-    logical, parameter :: SHIFT=.TRUE.
-    double precision, parameter :: EPS=1.d0, SIG=1.d0, MASS=1.d0, RC=min(2.5d0*SIG, HBOX)
-    double precision, parameter :: RC2=RC*RC, EPS4=4.d0*EPS, SIG2=SIG*SIG
+    ! logical, parameter :: SHIFT=.TRUE.
+    ! double precision, parameter :: EPS=1.d0, SIG=1.d0, MASS=1.d0, RC=min(2.5d0*SIG, HBOX)
+    ! double precision :: RC2=RC*RC, EPS4=4.d0*EPS, SIG2=SIG*SIG
+    double precision :: RC2, EPS4, SIG2
     double precision :: ECUT, Enb = 0.d0
 
     contains
@@ -33,8 +35,9 @@ module nonBonded
         ! This subroutine should be called only once, prior to the MC simulation.
         implicit none
 
-        if (SHIFT) then
+        if (SHIFT.eq.1) then
             ECUT = 0.d0 
+            RC2 = RC*RC
             call enerLenJon(RC2, ECUT)
         end if
     end subroutine shiftLenJon
@@ -48,10 +51,14 @@ module nonBonded
         double precision, intent(inout) :: enij
         double precision :: r2i, r6i
 
+        RC2 = RC*RC
+        EPS4 = 4.d0*EPS
+        SIG2 = SIG*SIG
+
         if (r2.le.RC2) then
             r2i = SIG2/r2
             r6i = r2i*r2i*r2i
-            if (SHIFT) then
+            if (SHIFT.eq.1) then
                 enij = EPS4*(r6i*r6i-r6i) - ECUT
             else
                 enij = EPS4*(r6i*r6i-r6i)
@@ -89,15 +96,15 @@ module nonBonded
         double precision :: dx, dy, dz, r2, enIj
 
         enI = 0.d0
-        ! Shift of 3 to ensure we skip particles related by the same dihedral  
-        do j = Jb + 3, NPART
+        ! Shift of 3 to ensure we skip particles related by the same dihedral 
+        do j = Jb + 3, N
             if (j.ne.I) then
                 ! Relative displacement between particles I, j
-                dx = Xi - X(j)
-                dy = Yi - Y(j)
-                dz = Zi - Z(j)
+                dx = Xi - R(1, j)
+                dy = Yi - R(2, j)
+                dz = Zi - R(3, j)
 
-                ! PBC (minimum image convention)
+                !PBC (minimum image convention)
                 call minImgConv(dx, dy, dz)
 
                 ! Lennard-Jones interaction between particles I, j
@@ -117,10 +124,10 @@ module nonBonded
         double precision :: xi, yi, zi, eni
 
         enb = 0.d0
-        do i = 1, NPART - 4
-            xi = X(i)
-            yi = Y(i)
-            zi = Z(i)
+        do i = 1, N - 4
+            xi = R(1, i)
+            yi = R(2, i)
+            zi = R(3, i)
             jb = i + 1
             call enerPart(xi, yi, zi, i, jb, eni)
             enb = enb + eni

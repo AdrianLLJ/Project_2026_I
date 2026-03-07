@@ -6,6 +6,7 @@ module bonded
     ! The current version only considers a C skeleton.
     ! ---
     use constants
+    use system
     implicit none
     double precision :: Eb = 0.d0
 
@@ -39,7 +40,7 @@ module bonded
         double precision :: utors
 
         eb = 0.d0
-        do i = 1, NPART - 3
+        do i = 1, N - 3
             call enerTorsion(DANG(i), utors)
             eb = eb + utors
         end do
