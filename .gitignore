@@ -6,3 +6,4 @@ modules/*.mod
 build/*
 .vscode/*
 .settings/*
+.venv/*

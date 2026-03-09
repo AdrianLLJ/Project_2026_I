@@ -10,5 +10,5 @@
 2.5         # rc: cutoff radius of non-bonded interactions
 5.0         # maxDih: maximum dihedral angle variation (degrees)
 100           # N_MCEQUI: number of Monte Carlo step in equilibration
-100           # N_MCPROD: number of Monte Carlo steps in production
+500           # N_MCPROD: number of Monte Carlo steps in production
 50          # NATTEMPTS: number of attempts to change a dihedral angle per MC step

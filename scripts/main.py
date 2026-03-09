@@ -13,7 +13,7 @@ def main():
     plot_dir = sys.argv[2]
 
     # Create output directory if non-existent
-    os.makedirs(plot_dir, exist_ok=True)
+    os.makedirs(plot_dir, exist_ok = True)
     print(f"Reading simulation data from {data_dir}...")
 
     # Energy Evolution

@@ -8,11 +8,13 @@ CORES ?= 4
 
 # Build directory
 BUILD_DIR := build
-OUT_DIR := results/data
+OUT_DIR := results
+DATA_DIR := $(OUT_DIR)/data
+PLOT_DIR := $(OUT_DIR)/plots
 INPUT_FILE := input.dat
 
 # Random data file that proves the simulation run has completed
-PRIMARY_DATA := $(OUT_DIR)/energy.dat
+PRIMARY_DATA := $(DATA_DIR)/energy.dat
 
 # Module inclusion (dynamic)
 ifeq ($(MODE),sequential)
@@ -21,7 +23,7 @@ ifeq ($(MODE),sequential)
     
     # Mappings
     TARGET_EXEC := $(SEQ_EXEC)
-    RUN_CMD     := ./$(TARGET_EXEC) $(OUT_DIR) < $(INPUT_FILE)
+    RUN_CMD     := ./$(TARGET_EXEC) $(DATA_DIR) < $(INPUT_FILE)
     CLEAN_CMD   := $(MAKE) -f src/sequential/sequential.mk clean-seq
 
 else ifeq ($(MODE),parallel)
@@ -30,7 +32,7 @@ else ifeq ($(MODE),parallel)
     
     # Mappings
     TARGET_EXEC := $(PAR_EXEC)
-    RUN_CMD     := cd $(PAR_DIR) && mpirun -np $(CORES) ./$(TARGET_EXEC) $(OUT_DIR) < $(INPUT_FILE)
+    RUN_CMD     := cd $(PAR_DIR) && mpirun -np $(CORES) ./$(TARGET_EXEC) $(DATA_DIR) < $(INPUT_FILE)
     CLEAN_CMD   := $(MAKE) -f src/parallel/parallel.mk clean-par 
 
 else
@@ -50,21 +52,32 @@ build: $(TARGET_EXEC)
 # This way, the simulation will only run if the files aren't there
 $(PRIMARY_DATA): $(TARGET_EXEC) $(INPUT_FILE)
 	@echo "[$(MODE)] Running simulation..."
+	mkdir -p $(DATA_DIR) $(PLOT_DIR)
 	$(RUN_CMD)
-	@echo "[$(MODE)] Simulation finished. Data is in $(OUT_DIR)/"
+	@echo "[$(MODE)] Simulation finished. Data is in $(DATA_DIR)/"
 
 # "make run" will only run if the data doesn't exist yet
 run: $(PRIMARY_DATA)
 
 # Plotting
-plot: run
+plot: run .venv
 	@echo "Generating figures..."
-	python3 scripts/main.py $(OUT_DIR) results/plots/
+	./.venv/bin/python scripts/main.py $(DATA_DIR) $(PLOT_DIR)
 	@echo "Plots saved to results/plots/"
 
+# Create venv if not present
+.venv:
+	python3 -m venv ./.venv
+	./.venv/bin/pip install numpy matplotlib
+
 # Clean
-clean:
-	@echo "[$(MODE)] Cleaning project..."
-	rm -rf $(BUILD_DIR)
+clean: clean_data clean_build
+	@echo "Cleaning project..."
 
 clean_data:
+	@echo "Cleaning results..."
+	rm -rf $(OUT_DIR)
+
+clean_build:
+	@echo "Cleaning build..."
+	rm -rf $(BUILD_DIR)

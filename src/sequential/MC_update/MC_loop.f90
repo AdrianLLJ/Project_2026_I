@@ -112,7 +112,7 @@ module mcloop
 
         ! compute change of energy
         dE = (enb_new - enb_old) + (utors_new_k - utors_old_k)
-        print*, "dE(torsion)", utors_new_k - utors_old_k
+        ! print*, "dE(torsion)", utors_new_k - utors_old_k
     end subroutine
 
     subroutine accept_reject(k, R_old, deltaPhi, phi_old, dE, ntry, naccept, E_new)
@@ -128,7 +128,7 @@ module mcloop
         
         ntry = ntry + 1
         E_new = En + dE
-        print*, "deltaPhi:", deltaPhi
+        ! print*, "deltaPhi:", deltaPhi
 
         if (dE.eq.0.d0) then
             ! Never accept moves that leave the system unchanged
