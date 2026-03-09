@@ -128,7 +128,7 @@ sync-up:
 run-cluster: sync-up
 	@echo "Compiling and submitting job on cluster..."
 	ssh $(CLUSTER_USER)@$(CLUSTER_HOST) "source /etc/profile && cd $(CLUSTER_DIR) && qsub -M $(CLUSTER_EMAIL) submit.sub"
-	@echo "Job submitted! Use 'ssh $(CLUSTER_USER)@$(CLUSTER_HOST) qstat' to check status."
+	@echo "Job submitted! Use 'make check-cluster' to check status."
 
 # Pull results back from cluster
 sync-down:

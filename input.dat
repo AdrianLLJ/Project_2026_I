@@ -9,7 +9,7 @@
 1			! shift: 1 or 0 to apply or not a shift to the LJ potential
 2.5			! rc: cutoff radius of non-bonded interactions
 5.0			! maxDih: maximum dihedral angle variation (degrees)
-10000000	! N_MCEQUI: number of Monte Carlo step in equilibration
+100000		! N_MCEQUI: number of Monte Carlo step in equilibration
 100000000	! N_MCPROD: number of Monte Carlo steps in production
-50			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
+497			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
 ! EOF (This line is necessary for the compilation in old compilers, aka the one available in cerqt)
