@@ -1,14 +1,15 @@
-500         # number of atoms
-1.0         # temperature (~40K but it is a greater effective temperature)
-250         # system box length 
-0.45        # bond length (LJ reduced units)
-109.5       # bond angle (degrees)    
-1.0         # sigma: effective non-bonded atomic size (LJ reduced units)
-1.0         # epsilon: LJ potential well depth (LJ reduced units)
-1.0         # mass: mass of the C's (LJ reduced units) 
-1           # shift: 1 or 0 to apply or not a shift to the LJ potential
-2.5         # rc: cutoff radius of non-bonded interactions
-5.0         # maxDih: maximum dihedral angle variation (degrees)
-100           # N_MCEQUI: number of Monte Carlo step in equilibration
-500           # N_MCPROD: number of Monte Carlo steps in production
-50          # NATTEMPTS: number of attempts to change a dihedral angle per MC step
+500			! number of atoms
+1.0			! temperature (~40K but it is a greater effective temperature)
+250			! system box length 
+0.45		! bond length (LJ reduced units)
+109.5		! bond angle (degrees)    
+1.0			! sigma: effective non-bonded atomic size (LJ reduced units)
+1.0			! epsilon: LJ potential well depth (LJ reduced units)
+1.0			! mass: mass of the C's (LJ reduced units) 
+1			! shift: 1 or 0 to apply or not a shift to the LJ potential
+2.5			! rc: cutoff radius of non-bonded interactions
+5.0			! maxDih: maximum dihedral angle variation (degrees)
+50			! N_MCEQUI: number of Monte Carlo step in equilibration
+50			! N_MCPROD: number of Monte Carlo steps in production
+50			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
+! EOF (This line is necessary for the compilation in old compilers, aka the one available in cerqt)

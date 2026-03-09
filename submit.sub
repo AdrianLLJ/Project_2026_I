@@ -1,0 +1,24 @@
+#!/bin/bash
+#$ -N MC_Polymer
+#$ -pe smp 1 
+#$ -q cerqt01.q
+#$ -S /bin/bash
+#$ -cwd
+#$ -o cluster_out.log
+#$ -e cluster_err.log
+#$ -m e
+
+# Author: Adrià Brú
+
+
+# Load profile
+source /etc/profile
+
+# Execute full pipeline, but writing data to $TMPDIR for better performance
+make run OUT_DIR=$TMPDIR
+
+# Create folder for the job
+mkdir -p $SGE_O_WORKDIR/results_archive/$JOB_ID
+
+# Copy results from $TMPDIR to working directory
+cp -r $TMPDIR/data $SGE_O_WORKDIR/results_archive/$JOB_ID/
