@@ -27,6 +27,7 @@ program mainglobal
     ! Initialize RNG
 
     ! System initialization
+    call init_io()
     call readInput()
     call allocateSystem()
     call initDihedrals()

@@ -6,6 +6,7 @@ module bonded
     ! The current version only considers a C skeleton.
     ! ---
     use constants
+    use io_module
     use system
     implicit none
     double precision :: Eb = 0.d0
@@ -40,9 +41,15 @@ module bonded
         integer :: i
         double precision, intent(out) :: eb
         double precision :: utors
+        character(len=256) :: out_dir
+        character(len=512) :: filepath
+
+        ! Instead of hardcoding the output file directory, it is obtained from the first CLI argument
+        ! First we get the argument
+        filepath = get_filepath("dihedrals.dat")
 
         eb = 0.d0
-        open(30, file = "dihedrals.dat", status="unknown", position="append", action="write")
+        open(30, file = trim(filepath), status="unknown", position="append", action="write")
         write(30, '(A)') "i, DANG(i), utors(i)"
             do i = 1, N - 3
                 call enerTorsion(i, utors)

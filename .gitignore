@@ -2,5 +2,7 @@
 *.mod
 *.out
 *.exe
-*.xyz
 modules/*.mod
+build/*
+.vscode/*
+.settings/*
