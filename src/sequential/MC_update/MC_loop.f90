@@ -65,9 +65,10 @@ module mcloop
                 call accept_reject(k, R_old, deltaPhi, phi_old, dE, ntry, naccept, E_new)
             end do
             if (i.ge.N_MCEQUI) then
-                ! call sample()
+                ! Only store data during "production" phase
+                call sample(i)
+                call writeXYZ("systemConfig.xyz", i)
             end if
-            call writeXYZ("systemConfig.xyz", i)
         end do
     end subroutine
 
@@ -150,6 +151,56 @@ module mcloop
             end if
         end if
     end subroutine accept_reject
+
+    subroutine sample(step)
+        ! Extracts data during the "production" phase for statistical analysis
+        implicit none
+        integer, intent(in) :: step
+        integer :: i
+        double precision :: Ree, Rg, Rcm(3)
+        character(len=512) :: path_ener, path_tors, path_struct
+
+        ! Energy evolution
+        path_ener = get_filepath("energy.dat")
+        open(40, file = trim(path_ener), position="append", status="unknown")
+        ! Write Step and Total Energy (En)
+        write(40, '(I8, F14.6)') step, En
+        close(40)
+
+        ! Torsion angle
+        path_tors = get_filepath("torsions.dat")
+        open(41, file = trim(path_tors), position="append", status="unknown")
+        ! Write Step and all dihedral angles
+        do i = 1, N-3
+            write(41, '(I8, F14.6)') step, DANG(i)
+        end do
+        close(41)
+
+        !! End-to-end Distance and Radius of Gyration
+        ! End-to-end Distance (Ree)
+        Ree = sqrt(sum((R(:, N) - R(:, 1))**2.d0))
+
+        ! Center of Mass (Rcm) for radius of gyration
+        Rcm = 0.d0
+        do i = 1, N
+            Rcm(:) = Rcm(:) + R(:, i)
+        end do
+        Rcm = Rcm / dble(N)
+
+        ! Radius of Gyration (Rg)
+        Rg = 0.d0
+        do i = 1, N
+            Rg = Rg + sum((R(:, i) - Rcm)**2.d0)
+        end do
+        Rg = sqrt(Rg / dble(N))
+
+        path_struct = get_filepath("structure.dat")
+        open(42, file=trim(path_struct), position="append", status="unknown")
+        ! Write Step, Ree, and Rg
+        write(42, '(I8, F14.6, F14.6)') step, Ree, Rg
+        close(42)
+
+    end subroutine sample
 end module mcloop
 
 ! Safer version of MC_step:
