@@ -12,15 +12,17 @@ module bonded
 
     contains
 
-    subroutine enerTorsion(dihedral, utors)
+    subroutine enerTorsion(dihedral_index, utors)
         ! Computes the torsion energy contribution of one dihedral, from:
         ! William L. Jorgensen, David S. Maxwell, and Julian Tirado-Rives
         ! Journal of the American Chemical Society 1996 118 (45), 11225-11236
         
         implicit none
-        double precision, intent(in) :: dihedral
+        integer, intent(in) :: dihedral_index
         double precision, intent(out) :: utors
-        double precision :: V1, V2, V3
+        double precision :: V1, V2, V3, dihedral
+
+        dihedral = DANG(dihedral_index)
 
         V1 = 1.411d0
         V2 = -0.271d0
@@ -40,10 +42,21 @@ module bonded
         double precision :: utors
 
         eb = 0.d0
-        do i = 1, N - 3
-            call enerTorsion(DANG(i), utors)
-            eb = eb + utors
-        end do
+        open(30, file = "dihedrals.dat", status="unknown", position="append", action="write")
+        write(30, '(A)') "i, DANG(i), utors(i)"
+            do i = 1, N - 3
+                call enerTorsion(i, utors)
+                call writeDihedrals(i, utors)
+                eb = eb + utors
+            end do
+        close(30)
     end subroutine enerBonded
 
+    subroutine writeDihedrals(i, utors)
+        ! Writes i, DANG(i) and utors to a file.
+        implicit none
+        integer, intent(in) :: i
+        double precision, intent(in) :: utors
+        write(30, '(I8, F12.6, F12.6)') i, DANG(i), utors
+    end subroutine writeDihedrals
 end module bonded

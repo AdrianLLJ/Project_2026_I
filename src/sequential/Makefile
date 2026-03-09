@@ -4,10 +4,14 @@ FC = gfortran
 # PATH TO MODULES
 MOD_DIR_INIT = ./initialization
 MOD_DIR_ENER = ./energy
+MOD_DIR_MC = ./MC_update
 MOD_DIR_MOD = ./modules
 
 # Compiler flags
-FLAGS = -I$(MOD_DIR_INIT) -I$(MOD_DIR_ENER) -I$(MOD_DIR_MOD) -J$(MOD_DIR_MOD)
+FLAGS = -I$(MOD_DIR_INIT) \
+		-I$(MOD_DIR_ENER) \
+		-I$(MOD_DIR_MC)   \
+		-J$(MOD_DIR_MOD)
 
 # Executable name
 EXEC = mainglobal.exe
@@ -19,8 +23,10 @@ SRC = $(MOD_DIR_INIT)/constants.f90 \
       $(MOD_DIR_INIT)/init_config.f90 \
       $(MOD_DIR_INIT)/centerPolymer.f90 \
 	  $(MOD_DIR_ENER)/nonbonded.f90 \
-	   $(MOD_DIR_ENER)/bonded.f90 \
+	  $(MOD_DIR_ENER)/bonded.f90 \
 	  $(MOD_DIR_ENER)/energy.f90 \
+	  $(MOD_DIR_MC)/MC_proposal.f90 \
+	  $(MOD_DIR_MC)/MC_loop.f90 \
 	  mainglobal.f90
 
 # Object files
@@ -37,6 +43,7 @@ $(EXEC): $(OBJ)
 clean:
 	rm -f $(OBJ) $(EXEC) *.mod $(MOD_DIR_INIT)/*.mod \
 							   $(MOD_DIR_ENER)/*.mod \
+							   $(MOD_DIR_MC)/*.mod   \
 							   $(MOD_DIR_MOD)/*.mod
 
 .PHONY: all clean

@@ -59,6 +59,7 @@ module init_config
                 end subroutine initPolymer
 
                 subroutine cross(a,b,c)
+                        ! Computes the cross product c = a x b
                         double precision, intent(in) :: a(3), b(3)
                         double precision, intent(out) :: c(3)
 

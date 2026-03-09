@@ -88,7 +88,7 @@ module nonBonded
         ! dihedral angles defined by every 4 consecutive particles, we only consider 
         ! non-bonded interactions for particles separated by 4+ consecutive particles.
         implicit none
-
+ 
         integer, intent(in) :: I, Jb
         integer :: j
         double precision, intent(in) :: Xi, Yi, Zi

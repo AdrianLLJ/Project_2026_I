@@ -13,14 +13,11 @@ module energy
 
     contains
 
-    subroutine totEnergy(En)
+    subroutine totEnergy(En, Eb, Enb)
         ! Computes the total energy of the system, considering both the bonded and nonbonded interactions.
-        ! Note that the calls to enerBonded and enerNonBonded are internal, thus the *global* variables of 
-        ! the bonded/non-bonded energies won't be updated.
-        ! If you want, you can call them separatedly in the main program.
+        ! It also gives back the total bonded and non-bonded energies separatedly.
         implicit none
-        double precision, intent(out) :: En
-        double precision :: Eb, Enb
+        double precision, intent(out) :: En, Eb, Enb
 
         En = 0.d0
         call enerBonded(Eb)
