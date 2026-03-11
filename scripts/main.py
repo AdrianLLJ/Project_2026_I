@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 # =========================================================
 # Physical Conversion Factors
 # =========================================================
-SIGMA_ANGSTROMS = 3.4      # Length scale (Ångstroms)
-EPSILON_KCAL_MOL = 0.066   # Energy scale (kcal/mol)
+SIGMA_ANGSTROMS = 3.9      # Length scale (Ångstroms)
+EPSILON_KCAL_MOL = 0.0913   # Energy scale (kcal/mol)
 
 # =========================================================
 # Main script
@@ -37,7 +37,7 @@ def main():
         plt.figure(figsize = (10, 6))
         plt.plot(steps, energy, label = "Total Energy", color = "#1f77b4", linewidth = 1.5)
         plt.xlabel("Monte Carlo Step")
-        plt.ylabel("Energy (Reduced Units)")
+        plt.ylabel("Energy (kcal/mol)")
         plt.title("System Energy Evolution")
         plt.grid(True, linestyle = "--", alpha = 0.6)
         plt.legend()
@@ -79,16 +79,16 @@ def main():
 
         color1 = "#ff7f0e"
         ax1.set_xlabel("Monte Carlo Step")
-        ax1.set_ylabel("End-to-End Distance ($R_{ee}$)", color = color1)
-        ax1.plot(steps, ree, color = color1, alpha = 0.8, label = "$R_{ee}$")
+        ax1.set_ylabel("End-to-End Distance ($R_{ee} / //AA$)", color = color1)
+        ax1.plot(steps, ree, color = color1, alpha = 0.8, label = "$R_{ee} / //AA$")
         ax1.tick_params(axis = "y", labelcolor = color1)
         ax1.grid(True, linestyle = "--", alpha = 0.6)
 
         # Second y-axis that shares the same x-axis
         ax2 = ax1.twinx()  
         color2 = "#9467bd"
-        ax2.set_ylabel("Radius of Gyration ($R_g$)", color=color2)
-        ax2.plot(steps, rg, color = color2, alpha = 0.8, label = "$R_g$")
+        ax2.set_ylabel("Radius of Gyration ($R_g / //AA$)", color=color2)
+        ax2.plot(steps, rg, color = color2, alpha = 0.8, label = "$R_g / //AA$")
         ax2.tick_params(axis = "y", labelcolor = color2)
 
         plt.title("Evolution of Polymer Dimensions")

@@ -25,9 +25,15 @@ module bonded
 
         dihedral = DANG(dihedral_index)
 
-        V1 = 1.411d0
-        V2 = -0.271d0
-        V3 = 3.145d0
+        ! In kcal/mol for the polyethilene would be (values from paper):
+        ! V1 = 1.411d0
+        ! V2 = -0.271d0
+        ! V3 = 3.145d0
+
+        ! In reduced units (e.g. dividing by epsilon 0.0913 kcal/mol *for our particular system*)
+        V1 = 15.46d0
+        V2 = -2.97d0
+        V3 = 34.45d0
 
         utors = 0.5d0*V1*(1 + cos(dihedral)) + &
                 0.5d0*V2*(1 - cos(2.d0*dihedral)) + &
