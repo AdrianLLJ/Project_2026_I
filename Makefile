@@ -122,7 +122,7 @@ CLUSTER_EMAIL ?= missing_email@ub.edu
 sync-up:
 	@if [ "$(CLUSTER_USER)" = "missing_user" ]; then echo "Error: .env file missing or CLUSTER_USER not set" && exit 1; fi
 	@echo "Uploading code to cluster..."
-	rsync -avz --exclude '.venv' --exclude 'build' --exclude 'results' --exclude '.git' --exclude '.env' ./ $(CLUSTER_USER)@$(CLUSTER_HOST):$(CLUSTER_DIR)
+	rsync -avz --exclude '.venv' --exclude 'build' --exclude 'results' --exclude '.git' --exclude '.env' --exclude '.jj' ./ $(CLUSTER_USER)@$(CLUSTER_HOST):$(CLUSTER_DIR)
 
 # Push code and submit the job (including compilation ofc)
 run-cluster: sync-up

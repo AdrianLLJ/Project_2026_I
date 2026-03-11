@@ -5,6 +5,15 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+# =========================================================
+# Physical Conversion Factors
+# =========================================================
+SIGMA_ANGSTROMS = 3.4      # Length scale (Ångstroms)
+EPSILON_KCAL_MOL = 0.066   # Energy scale (kcal/mol)
+
+# =========================================================
+# Main script
+# =========================================================
 def main():
     # The dirs come from CLI (included in the makefile ofc)
     if len(sys.argv) != 3:
@@ -23,7 +32,7 @@ def main():
     if os.path.exists(energy_file):
         data = np.loadtxt(energy_file)
         steps = data[:, 0]
-        energy = data[:, 1]
+        energy = data[:, 1] * EPSILON_KCAL_MOL
         
         plt.figure(figsize = (10, 6))
         plt.plot(steps, energy, label = "Total Energy", color = "#1f77b4", linewidth = 1.5)
@@ -63,8 +72,8 @@ def main():
     if os.path.exists(struc_file):
         data = np.loadtxt(struc_file)
         steps = data[:, 0]
-        ree = data[:, 1]
-        rg = data[:, 2]
+        ree = data[:, 1] * SIGMA_ANGSTROMS
+        rg = data[:, 2] * SIGMA_ANGSTROMS
         
         fig, ax1 = plt.subplots(figsize = (10, 6))
 

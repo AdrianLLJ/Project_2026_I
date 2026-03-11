@@ -20,6 +20,7 @@ program mainglobal
     ! Initialize RNG
     integer :: nseed
     integer, allocatable :: seed(:)
+	character(len=512) :: path_log
     call random_seed(size=nseed)
     allocate(seed(nseed))
     seed = 83226
