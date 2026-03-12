@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y \
+        build-essential \
+        gfortran \
+        make \
+        python3 \
+        python3-pip \
+        python3-venv
+    
+    # Clean the apt cache to keep the container file size as small as possible
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export LC_ALL=C

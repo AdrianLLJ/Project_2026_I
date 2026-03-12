@@ -10,7 +10,7 @@
 2.5			! rc: cutoff radius of non-bonded interactions (in units of simga)
 5.0			! maxDih: maximum dihedral angle variation (degrees)
 10000		! N_MCEQUI: number of Monte Carlo step in equilibration
-1000000		! N_MCPROD: number of Monte Carlo steps in production
-497			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
-30			! NSAVE: for every NSAVE steps, 1 data point is stored
+20000		! N_MCPROD: number of Monte Carlo steps in production
+250			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
+20			! NSAVE: for every NSAVE steps, 1 data point is stored
 ! EOF (This line is necessary for the compilation in old compilers, aka the one available in cerqt)
