@@ -6,6 +6,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=1G
 #SBATCH --array=0-23          # 24 jobs
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=Slurm
 
 # Parameter grid (6 temps x 4 angles = 24 combinations)
 TEMPS=(0.6 0.8 1.0 1.2 1.4 1.6)
@@ -22,7 +24,7 @@ CURRENT_ANGLE=${ANGLES[$ANGLE_IDX]}
 
 # Workspace setup
 BASE_DIR=$SLURM_SUBMIT_DIR
-JOB_WORKSPACE="${BASE_DIR}/runs/job_${SLURM_ARRAY_TASK_ID}"
+JOB_WORKSPACE="${BASE_DIR}/runs/job_${SLURM_ARRAY_JOB_ID}/task_${SLURM_ARRAY_TASK_ID}"
 
 mkdir -p ${JOB_WORKSPACE}
 
@@ -34,7 +36,7 @@ rsync -a --exclude 'build' \
          ${BASE_DIR}/ ${JOB_WORKSPACE}/
 
 cd ${JOB_WORKSPACE}
-ln -s ${BASE_DIR}/.venv ${JOB_WORKSPACE}/.venv
+#ln -s ${BASE_DIR}/.venv ${JOB_WORKSPACE}/.venv
 
 # Modify input.dat (Line 2 for Temp, Line 11 for maxDih)
 # We use '|' as the sed delimiter so the slashes in the comments don't break it

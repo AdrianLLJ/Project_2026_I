@@ -1,0 +1,17 @@
+500			! number of atoms
+0.6                     ! temperature (in units of epsilon/k_B; k_B = 0.0019872041 kcal/mol*K)
+250			! system box length (in units of sigma)
+0.4			! bond length (in units of sigma)
+109.5		! bond angle (degrees)    
+1.0			! sigma: effective non-bonded atomic size        (LJ reduced units : 3.9 Angstroms)
+1.0			! epsilon: LJ potential well depth               (LJ reduced units : 0.0913 kcal/mol)
+1.0			! mass: mass of the C's                          (LJ reduced units : 14 g/mol) 
+1			! shift: 1 or 0 to apply or not a shift to the LJ potential
+2.5			! rc: cutoff radius of non-bonded interactions (in units of simga)
+20.0                     ! maxDih: maximum dihedral angle variation (degrees)
+10000		! N_MCEQUI: number of Monte Carlo step in equilibration
+20000		! N_MCPROD: number of Monte Carlo steps in production
+350			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
+20			! NSAVE: for every NSAVE steps, 1 data point is stored
+1			! initRandom: 1 or 0 to initialise all dihedrals randomly or all dihedrals as pi
+! EOF (This line is necessary for the compilation in old compilers, aka the one available in cerqt)
