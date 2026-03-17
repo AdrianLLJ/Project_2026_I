@@ -13,9 +13,34 @@ module verlet
     
     ! nlist and list are allocated in new_vlist. Make sure to initialize them at some point.
     integer, allocatable :: nlist(:), list(:,:)
-    double precision :: posv(N)
+    double precision :: posv(3, N)
 
     contains
+
+    subroutine checkUpdateVlist(k, poskp3, nlist, posv, list)
+        ! Checks if the Verlet lists needs to be recomputed pre/post a dihedral rotation.
+        ! The subrotine recives as input which dihedral was changed (k), and checks if 
+        ! particle k+3 has moved more that the 'skin depth' given by RC, RV. 
+        ! Given how the the proposing of new dihedrals is done, we only need to check if the first
+        ! rotating particle has left its RV sphere. See module 'mcloop'.
+
+        implicit none
+        integer, intent(in) :: k
+        integer, allocatable, intent(inout) :: nlist(:), list(:,:)
+        double precision, intent(in) :: poskp3(3)  ! the position (old/new) of the k+3 particle
+        double precision, intent(inout) :: posv(3, N)
+        double precision :: rposkp3, rvposkp3
+
+        ! Define norm of poskp3 and vposkp3 vectors (the latter is the current position of 
+        ! particle k+3 in the Verlet scheme).
+        rposkp3 = sqrt(poskp3(1)**2 + poskp3(2)**2 + poskp3(3)**2) 
+        rvposkp3 = sqrt(posv(1, k+3,1)**2 + posv(2, k+3)**2 + posv(3, k+3)**2)        
+
+        ! Check if need to update
+        ! TODO : Check if (RV-RC) needs to be (RV-RC)/2.d0
+        if (abs(rposkp3-rvposkp3).gt.(RV-RC)) call new_vlist(nlist, posv, list)
+
+    end subroutine checkUpdateVlist
 
     subroutine new_vlist(nlist, posv, list)
         !---
@@ -32,7 +57,7 @@ module verlet
         implicit none
         integer :: i, j
         integer, allocatable, intent(out) :: nlist(:), list(:,:)
-        double precision, intent(out):: posv(N)
+        double precision, intent(out):: posv(3, N)
 
         ! Blind allocation: we create a matrix list with as many columns as if the Verlet list
         ! was not used, namely, N choose 2. Just so that we have enough components (to avoid

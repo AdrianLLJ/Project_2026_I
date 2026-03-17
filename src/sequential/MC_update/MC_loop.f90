@@ -90,12 +90,19 @@ module mcloop
         call proposeDihedral(k, deltaPhi)
         ! Store old positions and dihedral involved in the update
         R_old = R
+        
+        ! Check we need to recompute the Verlet list before the rotation
+        if (isVlist.eq.1) call checkUpdateVlist(k, R_old(:,k+3), nlist, posv, list)
 
         ! compute *old* torsion and non-bonded energies
         call enerTorsion(k, utors_old_k)
         enb_old = 0.d0
         do I = 1, k+1
-            call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+            if (isVlist.eq.1) then
+                call enerPartVlist(R(1, I), R(2, I), R(3, I), k-1, enI)
+            else if (isVlist.eq.0) then
+                call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+            end if
             enb_old = enb_old + enI
         end do
 
@@ -105,11 +112,18 @@ module mcloop
         phi_old = DANG(k)
         DANG(k) = DANG(k) + deltaPhi
 
+        ! Check we need to recompute the Verlet list after the rotation
+        if (isVlist.eq.1) call checkUpdateVlist(k, R(:,k+3), nlist, posv, list)
+
         ! compute *new* torsion and non-bonded energies
         call enerTorsion(k, utors_new_k)
         enb_new = 0.d0
         do I = 1, k+1
-            call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+            if (isVlist.eq.1) then
+                call enerPartVlist(R(1, I), R(2, I), R(3, I), k-1, enI)
+            else if (isVlist.eq.0) then
+                call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+            end if
             enb_new = enb_new + enI
         end do
 
