@@ -59,6 +59,7 @@ module io_module
                         read(*,*) NATTEMPTS
                         read(*,*) NSAVE
                         read(*,*) initRandom
+                        read(*,*) isVlist
 
                         ! Convert degrees to radians
                         BANG = BANG * PI / 180.d0

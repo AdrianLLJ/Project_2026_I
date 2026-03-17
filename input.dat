@@ -15,4 +15,5 @@
 350			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
 20			! NSAVE: for every NSAVE steps, 1 data point is stored
 1			! initRandom: 1 or 0 to initialise all dihedrals randomly or all dihedrals as pi
+1           ! isVlist: 1 or 0 to use Verlet lists to compute the non-bonded energy
 ! EOF (This line is necessary for the compilation in old compilers, aka the one available in cerqt)

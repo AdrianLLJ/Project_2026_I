@@ -20,6 +20,7 @@ module nonBonded
     ! ---
     use constants
     use system
+    use verlet
     implicit none
 
     ! logical, parameter :: SHIFT=.TRUE.
@@ -117,6 +118,7 @@ module nonBonded
 
     subroutine enerNonBond(enb)
         ! Computes the total non-bonded energy of the system due to each interacting particle.
+        ! It allows to make the computation with or without Verlet lists (via the global variable isVlist).
         implicit none
 
         integer :: i, jb
@@ -128,8 +130,14 @@ module nonBonded
             xi = R(1, i)
             yi = R(2, i)
             zi = R(3, i)
-            jb = i + 1
-            call enerPart(xi, yi, zi, i, jb, eni)
+
+            if (isVlist.eq.1) then
+                call enerPartVlist(Xi, Yi, Zi, i, eni)
+            else if (isVlist.eq.0) then
+                jb = i + 1 
+                call enerPart(xi, yi, zi, i, jb, eni)
+            end if
+
             enb = enb + eni
         end do
     end subroutine enerNonBond

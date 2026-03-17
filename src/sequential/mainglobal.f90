@@ -10,6 +10,7 @@ program mainglobal
     use system
     ! Energy modules (@AdrianLLJ)
     use nonBonded
+    use verlet
     use bonded
     use energy
     ! MC modules (@J-dot-Barrientos, @AdrianLLJ, @cooligula)
