@@ -6,7 +6,6 @@ module energy
     ! ---
     use constants
     use nonBonded
-    use verlet
     use bonded
     implicit none
 

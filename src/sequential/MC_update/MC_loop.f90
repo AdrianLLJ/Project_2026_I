@@ -92,7 +92,7 @@ module mcloop
         R_old = R
         
         ! Check we need to recompute the Verlet list before the rotation
-        if (isVlist.eq.1) call checkUpdateVlist(k, R_old(:,k+3), nlist, posv, list)
+        if (isVlist.eq.1) call checkUpdateVlist(k, R_old(:,k+3))
 
         ! compute *old* torsion and non-bonded energies
         call enerTorsion(k, utors_old_k)
@@ -113,7 +113,7 @@ module mcloop
         DANG(k) = DANG(k) + deltaPhi
 
         ! Check we need to recompute the Verlet list after the rotation
-        if (isVlist.eq.1) call checkUpdateVlist(k, R(:,k+3), nlist, posv, list)
+        if (isVlist.eq.1) call checkUpdateVlist(k, R(:,k+3))
 
         ! compute *new* torsion and non-bonded energies
         call enerTorsion(k, utors_new_k)

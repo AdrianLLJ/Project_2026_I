@@ -20,25 +20,32 @@ module nonBonded
     ! ---
     use constants
     use system
-    use verlet
     implicit none
 
-    ! logical, parameter :: SHIFT=.TRUE.
-    ! double precision, parameter :: EPS=1.d0, SIG=1.d0, MASS=1.d0, RC=min(2.5d0*SIG, HBOX)
-    ! double precision :: RC2=RC*RC, EPS4=4.d0*EPS, SIG2=SIG*SIG
+    ! ---FIRST SECTION VARIABLES
     double precision :: RC2, EPS4, SIG2
     double precision :: ECUT, Enb = 0.d0
 
+    ! ---SECOND SECTION VARIABLES
+    ! nlist and list are allocated in new_vlist. Make sure to initialize them at some point.
+    integer, allocatable :: nlist(:), list(:,:)
+    double precision, allocatable :: posv(:,:)
+
     contains
+
+    ! ---FIRST SECTION
 
     subroutine shiftLenJon()
         ! Sets the energy shift for the Lennard-Jones potential.
         ! This subroutine should be called only once, prior to the MC simulation.
         implicit none
 
+        RC2 = RC*RC
+        EPS4 = 4.d0*EPS
+        SIG2 = SIG*SIG
+
         if (SHIFT.eq.1) then
             ECUT = 0.d0 
-            RC2 = RC*RC
             call enerLenJon(RC2, ECUT)
         end if
     end subroutine shiftLenJon
@@ -51,10 +58,6 @@ module nonBonded
         double precision, intent(in) :: r2
         double precision, intent(inout) :: enij
         double precision :: r2i, r6i
-
-        RC2 = RC*RC
-        EPS4 = 4.d0*EPS
-        SIG2 = SIG*SIG
 
         if (r2.le.RC2) then
             r2i = SIG2/r2
@@ -141,4 +144,130 @@ module nonBonded
             enb = enb + eni
         end do
     end subroutine enerNonBond
+
+    ! ! ---SECOND SECTION --------------------------------------------------------------------------------
+    ! This section contains all the subroutines that create/update the Verlet list,
+    ! considering a Verlet radius RV for a system with PBC to consider
+    ! the minimum image as neigbhours (based on Bekker et al.'s algorithm).
+    ! The author (@AdrianLLJ) chose to add it to the same module since there is a codependence between
+    ! subroutines from the different sections (since they are all related to the non-bonded interactions)
+    ! ----------------------------------------------------------------------------------------------------
+
+     subroutine checkUpdateVlist(k, poskp3)
+        ! Checks if the Verlet lists needs to be recomputed pre/post a dihedral rotation.
+        ! The subrotine recives as input which dihedral was changed (k), and checks if 
+        ! particle k+3 has moved more that the 'skin depth' given by RC, RV. 
+        ! Given how the the proposing of new dihedrals is done, we only need to check if the first
+        ! rotating particle has left its RV sphere. See module 'mcloop'.
+
+        implicit none
+        integer, intent(in) :: k
+        double precision, intent(in) :: poskp3(3)  ! the position (old/new) of the k+3 particle
+        double precision :: dxkp3, dykp3, dzkp3, drkp3
+
+        ! compute displacement between new position and Verlet reference
+        dxkp3 = poskp3(1) - posv(1, k+3)
+        dykp3 = poskp3(2) - posv(2, k+3)
+        dzkp3 = poskp3(3) - posv(3, k+3)
+
+        ! apply minimum image convention for PBC
+        call minImgConv(dxkp3, dykp3, dzkp3)
+
+        drkp3 = sqrt(dxkp3*dxkp3 + dykp3*dykp3 + dzkp3*dzkp3)        
+
+        ! Check if need to update
+        ! TODO : check if RV-RC needs to be (RV-RC)/2
+        if (drkp3.gt.(RV-RC)) call new_vlist()
+
+    end subroutine checkUpdateVlist
+
+    subroutine allocVerlet()
+        ! Blind allocation: trial and error allocation of the number of neigbours for the
+        ! Verlet list; depends on the density of particles given an initial configuration
+        ! In general, it is safer to add enough, since the num. of neighbours changes during the simulation
+        implicit none
+
+        allocate(posv(3, N))
+        allocate(nlist(N))
+        allocate(list(N, MAX_NEIGH))
+    end subroutine allocVerlet
+
+    subroutine new_vlist()
+        !---
+        ! Creates/reconstructs the Verlet list of each non-bonding interacting particle with PBC.
+        ! The subroutine computes the number of neighbours of each interacting particle, nlist, if
+        ! the distance between particle i and neigbhour j is less than the Verlet radius.
+        ! The full list is given in matrix format "list(particle i,neighbour number)=particle j"
+        ! Example:
+        ! if particle i=23 has neigbhour j=15 within the Verlet radius and it is the 4-th neighbour
+        ! found for particle i=23, then in the Verlet list of particle i=23, particle j=15
+        ! will be assigned the neigbhour number 4. And so "j=15=list(i=23, nlist(i=23)=4)".
+        !---
+
+        implicit none
+        integer :: i, j
+        double precision :: dposDist, dpos(3)
+
+        ! Blind allocation: we create a matrix list with as many columns as if the Verlet list
+        ! was not used, namely, N choose 2. Just so that we have enough components (to avoid
+        ! 'smarter' but more prone to error/less readable allocations).
+
+        ! Copy the positions of each particle
+        do i=1, N
+            nlist(i) = 0
+            posv(:, i) = R(:, i)
+        end do
+
+        do i=1, N-1
+            ! Shift of 3 to ensure we skip particles related by the same dihedral
+            do j=i+3, N
+                dpos(:) = R(:, i) - R(:, j)
+                ! Apply PBC (minimum image convention) for the neigbhours
+                call minImgConv(dpos(1), dpos(2), dpos(3))
+                ! Assign neighbours to Verlet lists
+                dposDist = sqrt(dpos(1)**2 + dpos(2)**2 + dpos(3)**2)
+                if (dposDist.lt.RV) then
+                    nlist(i) = nlist(i) + 1
+                    nlist(j) = nlist(j) + 1
+
+                    if ((nlist(i).gt.MAX_NEIGH).or.(nlist(j).gt.MAX_NEIGH)) then 
+                        write(91, *) "Verlet list overflow"
+                    end if
+
+                    list(i, nlist(i)) = j
+                    list(j, nlist(j)) = i
+                end if 
+            end do
+        end do
+    end subroutine new_vlist
+
+    subroutine enerPartVlist(Xi, Yi, Zi, I, enI)
+        ! Computes the non-bonded energy of particle I by the interaction with
+        ! all its Verlet neigbouring particles. It serves the same purpose as subroutine
+        ! 'enerPart' in module nonBonded.
+        implicit none
+
+        integer, intent(in) :: I
+        integer :: j, neighIj
+        double precision, intent(in) :: Xi, Yi, Zi
+        double precision, intent(out) :: enI
+        double precision :: dx, dy, dz, r2, enIj
+
+        enI = 0.d0 
+        do neighIj = 1, nlist(I)
+            j = list(I, neighIj)
+            ! Relative displacement between particles I, j
+            dx = Xi - R(1, j)
+            dy = Yi - R(2, j)
+            dz = Zi - R(3, j)
+
+            !PBC (minimum image convention)
+            call minImgConv(dx, dy, dz)
+
+            ! Lennard-Jones interaction between particles I, j
+            r2 = dx*dx + dy*dy + dz*dz
+            call enerLenJon(r2, enIj)
+            enI = enI + enIj
+        end do
+    end subroutine enerPartVlist
 end module nonBonded

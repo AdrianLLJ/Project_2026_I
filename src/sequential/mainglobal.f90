@@ -10,7 +10,6 @@ program mainglobal
     use system
     ! Energy modules (@AdrianLLJ)
     use nonBonded
-    use verlet
     use bonded
     use energy
     ! MC modules (@J-dot-Barrientos, @AdrianLLJ, @cooligula)
@@ -18,10 +17,15 @@ program mainglobal
     use mcloop
 
     implicit none
-    ! Initialize RNG
     integer :: nseed
     integer, allocatable :: seed(:)
+    double precision :: t1, t2
 	character(len=512) :: path_log
+
+    ! Start CPU counter
+    call cpu_time(t1)
+
+    ! Initialize RNG
     call random_seed(size=nseed)
     allocate(seed(nseed))
     seed = 83226
@@ -42,11 +46,20 @@ program mainglobal
     ! Open log file to write basic results of the simulation
     path_log = get_filepath("simulation.log")
     open(91, file = trim(path_log), position="append", status="unknown")
+
+    ! Verlet list initialization
+    if (isVlist.eq.1) then 
+        call allocVerlet()
+        call new_vlist()
+        write(91, *) "Initialized Verlet list of test particle 1:"
+        write(91, *) list(1, :)
+    end if
+    ! Verlet list initialization
     
     ! Energies initialization
     call shiftLenJon()
     write(91, *) 'RC, ECUT:', RC, ECUT
-    call totEnergy(En, Eb, Enb)
+    call totEnergy(En, Eb, Enb)     
     write(91, *), "Initial Enb, Eb, En:", Enb, Eb, En
     ! Energies initialization
 
@@ -60,6 +73,10 @@ program mainglobal
     write(91, *) "Final Enb, Eb, En:", Enb, Eb, En
     write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
     ! Test final energies and acceptance ratio
+
+    ! Final CPU counter
+    call cpu_time(t2)
+    write(91, *) "Total CPU time:", t2-t1
 
     close(91)
 
