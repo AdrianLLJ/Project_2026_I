@@ -52,6 +52,7 @@ module io_module
                         read(*,*) MASS
                         read(*,*) SHIFT
                         read(*,*) RC
+                        read(*,*) RV
                         read(*,*) maxDih
                         read(*,*) N_MCEQUI
                         read(*,*) N_MCPROD
