@@ -33,7 +33,6 @@ def main():
         data = np.loadtxt(energy_file)
         steps = data[:, 0]
         energy = data[:, 1] * EPSILON_KCAL_MOL
-        
         plt.figure(figsize = (10, 6))
         plt.plot(steps, energy, label = "Total Energy", color = "#1f77b4", linewidth = 1.5)
         plt.xlabel("Monte Carlo Step")

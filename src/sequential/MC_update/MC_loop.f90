@@ -65,12 +65,13 @@ module mcloop
                 ! accept or reject the proposed configuration
                 call accept_reject(k, R_old, deltaPhi, phi_old, dE, ntry, naccept, E_new)
             end do
-            if (i.ge.N_MCEQUI) then
-                ! Only store data during "production" phase
-                if (mod(i, NSAVE) == 0) then
-                    call sample(i)
-                    call writeXYZ("systemConfig.xyz", i)
-                end if
+            ! Sample observables during equilibration & production to track changes
+            if (mod(i, NSAVE) == 0) then
+                call sample(i)
+            end if
+            if ((i.ge.N_MCEQUI).and.(mod(i, NSAVE) == 0)) then
+                ! Only store config. during production (to see final configs.)
+                call writeXYZ("systemConfig.xyz", i) 
             end if
         end do
     end subroutine
