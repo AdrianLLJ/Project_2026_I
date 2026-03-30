@@ -39,7 +39,7 @@ module mcloop
     use io_module
     implicit none
 
-    double precision :: E_new, dE
+    double precision :: E_new, Enb_new, Eb_new, dE, delta_enb, delta_utors
     integer :: ntry, naccept
 
     contains
@@ -48,7 +48,7 @@ module mcloop
         ! Runs the basic Monte Carlo loops and stages (equilibration, production and sampling)
         integer :: i, j, k, n_mcs
         integer, intent(inout) :: ntry, naccept
-        double precision :: R_old(3, N), phi_old, deltaPhi, dE
+        double precision :: R_old(3, N), phi_old, deltaPhi
 
         ! total number of MC steps
         n_mcs = N_MCEQUI+N_MCPROD
@@ -61,9 +61,9 @@ module mcloop
             ! each dihedral once
             do j=1, NATTEMPTS
                 ! generate new trial configuration
-                call MC_trial_step(k, R_old, phi_old, deltaPhi, dE)
+                call MC_trial_step(k, R_old, phi_old, deltaPhi, dE, delta_enb, delta_utors)
                 ! accept or reject the proposed configuration
-                call accept_reject(k, R_old, deltaPhi, phi_old, dE, ntry, naccept, E_new)
+                call accept_reject(k, R_old, deltaPhi, phi_old, delta_enb, delta_utors, dE, ntry, naccept, E_new, Enb_new, Eb_new)
             end do
             ! Sample observables during equilibration & production to track changes
             if (mod(i, NSAVE) == 0) then
@@ -76,14 +76,14 @@ module mcloop
         end do
     end subroutine
 
-    subroutine MC_trial_step(k, R_old, phi_old, deltaPhi, dE)
+    subroutine MC_trial_step(k, R_old, phi_old, deltaPhi, dE, delta_enb, delta_utors)
         ! Implements a single MC trial step, that is,
         ! it proposes to change a single dihedral and computes the
         ! energy difference between the old and new configurations
         implicit none
         integer, intent(out) :: k
         integer :: I
-        double precision, intent(out) :: R_old(3,N), phi_old, deltaPhi, dE
+        double precision, intent(out) :: R_old(3,N), phi_old, deltaPhi, dE, delta_enb, delta_utors
         double precision :: utors_old_k, utors_new_k, enI, enb_old, enb_new
 
 
@@ -93,9 +93,9 @@ module mcloop
         R_old = R
         
         ! Check we need to recompute the Verlet list before the rotation
-        if (isVlist.eq.1) then 
-            call checkUpdateVlist(k, R_old(:,k+3))
-        end if
+        ! if (isVlist.eq.1) then 
+        !     call checkUpdateVlist(k, R_old(:,k+3))
+        ! end if
 
         ! compute *old* torsion and non-bonded energies
         call enerTorsion(k, utors_old_k)
@@ -103,9 +103,10 @@ module mcloop
         do I = 1, k+1
             if (isVlist.eq.1) then
                 ! before was k-1 as input instead of I
-                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, enI)
+                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, k, enI)
             else if (isVlist.eq.0) then
-                call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+                ! call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+                call enerPart(R(1, I), R(2, I), R(3, I), I, max(k, I+1), enI)
             end if
             enb_old = enb_old + enI
         end do
@@ -117,40 +118,46 @@ module mcloop
         DANG(k) = DANG(k) + deltaPhi
 
         ! Check we need to recompute the Verlet list after the rotation
-        if (isVlist.eq.1) then 
-            call checkUpdateVlist(k, R(:,k+3))
-        end if
+        ! if (isVlist.eq.1) then 
+        !     call checkUpdateVlist(k, R(:,k+3))
+        ! end if
 
         ! compute *new* torsion and non-bonded energies
         call enerTorsion(k, utors_new_k)
         enb_new = 0.d0
         do I = 1, k+1
             if (isVlist.eq.1) then
-                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, enI)
+                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, k, enI)
             else if (isVlist.eq.0) then
-                call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+                ! call enerPart(R(1, I), R(2, I), R(3, I), I, k-1, enI)
+                call enerPart(R(1, I), R(2, I), R(3, I), I, max(k, I+1), enI)
             end if
             enb_new = enb_new + enI
         end do
 
         ! compute change of energy
-        dE = (enb_new - enb_old) + (utors_new_k - utors_old_k)
+        delta_enb = enb_new - enb_old
+        delta_utors = utors_new_k - utors_old_k
+        dE = delta_enb + delta_utors
         ! print*, "dE(torsion)", utors_new_k - utors_old_k
     end subroutine
 
-    subroutine accept_reject(k, R_old, deltaPhi, phi_old, dE, ntry, naccept, E_new)
+    subroutine accept_reject(k, R_old, deltaPhi, phi_old, delta_enb, delta_utors, dE, ntry, naccept, E_new, Enb_new, Eb_new)
         ! Decides wether or not to accept the proposed change of the system given
         ! by a change in the k-th dihedral by an amount deltaPhi.
         ! Assumes En in use... (total energy)
         implicit none
         integer, intent(in) :: k
         integer, intent(inout) :: ntry, naccept
-        double precision, intent(in) :: R_old(3,N), deltaPhi, phi_old, dE
-        double precision, intent(out) :: E_new
+        double precision, intent(in) :: R_old(3,N), deltaPhi, phi_old
+        double precision, intent(in) :: dE, delta_enb, delta_utors
+        double precision, intent(out) :: E_new, Enb_new, Eb_new
         double precision :: rnd
         
         ntry = ntry + 1
         E_new = En + dE
+        Enb_new = Enb + delta_enb
+        Eb_new = Eb + delta_utors
         ! print*, "deltaPhi:", deltaPhi
 
         if (dE.eq.0.d0) then
@@ -158,15 +165,24 @@ module mcloop
             DANG(k) = phi_old
             R = R_old 
         else if (dE.lt.0.d0) then
+            naccept = naccept + 1
             ! Always accept moves that reduce the energy
             En = E_new
-            naccept = naccept + 1
+            Enb = Enb_new
+            Eb = Eb_new
+            ! Only update Verlet list if a move is accepted
+            ! if (isVlist.eq.1) call checkUpdateVlist(k, R(:,k+3))
+            if (isVlist.eq.1) call checkUpdateVlist()
         else if (dE.gt.0.d0) then
             ! Accept moves that increase the energy with prob. given by the Metropolis rule
             call random_number(rnd)
             if (rnd .le. exp(-dE/TEMP)) then
-                En = E_new
                 naccept = naccept + 1
+                En = E_new
+                Enb = Enb_new
+                Eb = Eb_new
+                ! if (isVlist.eq.1) call checkUpdateVlist(k, R(:,k+3))
+                if (isVlist.eq.1) call checkUpdateVlist()
             else
                 ! Restore changed positions and dihedral
                 DANG(k) = phi_old
@@ -187,7 +203,7 @@ module mcloop
         path_ener = get_filepath("energy.dat")
         open(40, file = trim(path_ener), position="append", status="unknown")
         ! Write Step and Total Energy (En)
-        write(40, '(I8, F25.6)') step, En, Enb, Eb
+        write(40, '(I8,3(1X,F25.6))') step, En, Enb, Eb
         close(40)
 
         ! Torsion angle

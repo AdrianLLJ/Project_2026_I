@@ -35,12 +35,12 @@ def main():
         energy = data[:, 1] * EPSILON_KCAL_MOL
         nonbond = data[:, 2] * EPSILON_KCAL_MOL
         bondener = data[:, 3] * EPSILON_KCAL_MOL
+
         plt.figure(figsize = (10, 6))
         plt.plot(steps, energy, label = "Total", color = "#1f77b4", linewidth = 1.5)
-        plt.plot(steps, nonbond, label = "Non-Bonded", color = "#be218f", linewidth = 1.5)
-        plt.plot(steps, bondener, label = "Bonded", color = "#21cf2f", linewidth = 1.5)
         plt.xlabel("Monte Carlo Step")
         plt.ylabel("Energy (kcal/mol)")
+        plt.yscale('asinh')   # like log scale but can handle negative energies: asinh(-x) = -asinh(x)
         plt.title("System Energy Evolution")
         plt.grid(True, linestyle = "--", alpha = 0.6)
         plt.legend()
@@ -48,6 +48,31 @@ def main():
         plt.savefig(os.path.join(plot_dir, "energy_evolution.png"), dpi = 300)
         plt.close()
         print(" > Generated energy_evolution.png")
+
+        plt.figure(figsize = (10, 6))
+        plt.plot(steps, nonbond, label = "Non-Bonded", color = "#be218f", linewidth = 1.5)
+        plt.xlabel("Monte Carlo Step")
+        plt.ylabel("Energy (kcal/mol)")
+        plt.yscale('asinh')
+        plt.title("Non-Bonded Energy Evolution")
+        plt.grid(True, linestyle = "--", alpha = 0.6)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(plot_dir, "NonBondEnergy_evolution.png"), dpi = 300)
+        plt.close()
+        print(" > Generated NonBondEnergy_evolution.png")
+
+        plt.figure(figsize = (10, 6))
+        plt.plot(steps, bondener, label = "Bonded", color = "#21cf2f", linewidth = 1.5)
+        plt.xlabel("Monte Carlo Step")
+        plt.ylabel("Energy (kcal/mol)")
+        plt.title("Bonded Energy Evolution")
+        plt.grid(True, linestyle = "--", alpha = 0.6)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(plot_dir, "BondEnergy_evolution.png"), dpi = 300)
+        plt.close()
+        print(" > Generated BondEnergy_evolution.png")
 
     # Torsion angle distribution
     tors_file = os.path.join(data_dir, "torsions.dat")

@@ -67,8 +67,9 @@ program mainglobal
     ! MC evolution
 
     ! Test final energies and acceptance ratio
+    write(91, *) "Final running energies:", Enb, Eb, En
     call totEnergy(En, Eb, Enb)
-    write(91, *) "Final Enb, Eb, En:", Enb, Eb, En
+    write(91, *) "Final configuration energies Enb, Eb, En:", Enb, Eb, En
     write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
     ! Test final energies and acceptance ratio
 

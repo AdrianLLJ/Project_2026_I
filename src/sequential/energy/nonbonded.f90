@@ -101,7 +101,9 @@ module nonBonded
 
         enI = 0.d0
         ! Shift of 3 to ensure we skip particles related by the same dihedral 
+        ! do j = Jb, N
         do j = Jb + 3, N
+            ! if (abs(j-I).ge.3) then
             if (j.ne.I) then
                 ! Relative displacement between particles I, j
                 dx = Xi - R(1, j)
@@ -135,7 +137,7 @@ module nonBonded
             zi = R(3, i)
 
             if (isVlist.eq.1) then
-                call enerPartVlist(Xi, Yi, Zi, i, eni)
+                call enerPartVlist(Xi, Yi, Zi, i, 0, eni)
             else if (isVlist.eq.0) then
                 jb = i + 1 
                 call enerPart(xi, yi, zi, i, jb, eni)
@@ -153,35 +155,61 @@ module nonBonded
     ! subroutines from the different sections (since they are all related to the non-bonded interactions)
     ! ----------------------------------------------------------------------------------------------------
 
-     subroutine checkUpdateVlist(k, poskp3)
+    subroutine checkUpdateVlist()
         ! Checks if the Verlet lists needs to be recomputed pre/post a dihedral rotation.
-        ! The subrotine recives as input which dihedral was changed (k), and checks if 
-        ! particle k+3 has moved more that the 'skin depth' given by RC, RV. 
-        ! Given how the the proposing of new dihedrals is done, we only need to check if the first
-        ! rotating particle has left its RV sphere. See module 'mcloop'.
+        !  The subroutine checks which particle has moved the most after a rotation of 1 diherdral.
+        ! Then for that particle checks if this distance is greater than the 'skin depth'. See module 'mcloop'.
 
         implicit none
-        integer, intent(in) :: k
-        double precision, intent(in) :: poskp3(3)  ! the position (old/new) of the k+3 particle
-        double precision :: dxkp3, dykp3, dzkp3, drkp3
+        integer :: i
+        double precision :: dx, dy, dz, dr2, max_dr2
 
-        ! compute displacement between new position and Verlet reference
-        dxkp3 = poskp3(1) - posv(1, k+3)
-        dykp3 = poskp3(2) - posv(2, k+3)
-        dzkp3 = poskp3(3) - posv(3, k+3)
+        max_dr2 = 0.d0
+        do i = 1, N
+            dx = R(1, i) - posv(1, i)
+            dy = R(2, i) - posv(2, i)
+            dz = R(3, i) - posv(3, i)
+            
+            call minImgConv(dx, dy, dz)
+            dr2 = dx*dx + dy*dy + dz*dz
+            if (dr2 .gt. max_dr2) max_dr2 = dr2
+        end do
 
-        ! apply minimum image convention for PBC
-        call minImgConv(dxkp3, dykp3, dzkp3)
-
-        drkp3 = sqrt(dxkp3*dxkp3 + dykp3*dykp3 + dzkp3*dzkp3)        
-
-        ! Check if need to update
-        ! TODO : check if RV-RC needs to be (RV-RC)/2
-        if (drkp3.gt.(RV-RC)/2.d0) then 
+        if (sqrt(max_dr2) .gt. (RV-RC)/2.d0) then 
             call new_vlist()
         end if
 
     end subroutine checkUpdateVlist
+
+    !  subroutine checkUpdateVlist(k, poskp3)
+    !     ! Checks if the Verlet lists needs to be recomputed pre/post a dihedral rotation.
+    !     ! The subrotine recives as input which dihedral was changed (k), and checks if 
+    !     ! particle k+3 has moved more that the 'skin depth' given by RC, RV. 
+    !     ! Given how the the proposing of new dihedrals is done, we only need to check if the first
+    !     ! rotating particle has left its RV sphere. See module 'mcloop'.
+
+    !     implicit none
+    !     integer, intent(in) :: k
+    !     double precision, intent(in) :: poskp3(3)  ! the position (old/new) of the k+3 particle
+    !     double precision :: dxkp3, dykp3, dzkp3, drkp3
+
+    !     ! compute displacement between new position and Verlet reference
+    !     dxkp3 = poskp3(1) - posv(1, k+3)
+    !     dykp3 = poskp3(2) - posv(2, k+3)
+    !     dzkp3 = poskp3(3) - posv(3, k+3)
+
+    !     ! apply minimum image convention for PBC
+    !     call minImgConv(dxkp3, dykp3, dzkp3)
+
+    !     drkp3 = sqrt(dxkp3*dxkp3 + dykp3*dykp3 + dzkp3*dzkp3)        
+
+    !     ! Check if need to update
+    !     ! TODO : check if RV-RC needs to be (RV-RC)/2
+    !     if (drkp3.gt.(RV-RC)/2.d0) then 
+    !         call new_vlist()
+    !     end if
+
+    ! end subroutine checkUpdateVlist
 
     subroutine allocVerlet()
         ! Blind allocation: trial and error allocation of the number of neigbours for the
@@ -219,8 +247,8 @@ module nonBonded
             nlist(i) = 0
             posv(:, i) = R(:, i)
         end do
-
-        do i=1, N-1
+        ! before i=1, N-1
+        do i=1, N-4
             ! Shift of 4 to ensure we skip particles related by the same dihedral
             do j=i+4, N
                 dpos(:) = R(:, i) - R(:, j)
@@ -243,13 +271,14 @@ module nonBonded
         end do
     end subroutine new_vlist
 
-    subroutine enerPartVlist(Xi, Yi, Zi, I, enI)
+    subroutine enerPartVlist(Xi, Yi, Zi, I, k, enI)
         ! Computes the non-bonded energy of particle I by the interaction with
-        ! all its Verlet neigbouring particles. It serves the same purpose as subroutine
-        ! 'enerPart' in module nonBonded.
+        ! all its Verlet neigbouring particles.  It does the equivalent of subroutine 'enerPart'.
+        ! For total energy computations pass k=0.
+        ! For the MC loop, pass the actual value of the dihedral k.
         implicit none
 
-        integer, intent(in) :: I
+        integer, intent(in) :: I, k
         integer :: j, neighIj
         double precision, intent(in) :: Xi, Yi, Zi
         double precision, intent(out) :: enI
@@ -258,8 +287,8 @@ module nonBonded
         enI = 0.d0 
         do neighIj = 1, nlist(I)
             j = list(I, neighIj)
-            ! this if was not here before (is to avoid double counting)
-            if (j.gt.I) then
+            ! Avoid double counting and particles related by the same dihedral
+            if (j.ge.max(k+2, I+4)) then
                 ! Relative displacement between particles I, j
                 dx = Xi - R(1, j)
                 dy = Yi - R(2, j)

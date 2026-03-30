@@ -11,9 +11,9 @@
 2.7         ! rv: Verlet radius                            (in units of sigma)
 500          ! MAX_NEIGH : estimated maximum number of neigbhours within rv to any particle
 1.5			! maxDih: maximum dihedral angle variation (degrees)
-7000		! N_MCEQUI: number of Monte Carlo step in equilibration (depends on maxDih)
-3000		! N_MCPROD: number of Monte Carlo steps in production
-350			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
+1000		! N_MCEQUI: number of Monte Carlo step in equilibration (depends on maxDih)
+1000		! N_MCPROD: number of Monte Carlo steps in production
+250			! NATTEMPTS: number of attempts to change a dihedral angle per MC step
 20			! NSAVE: for every NSAVE steps, 1 data point is stored
 1			! initRandom: 1 or 0 to initialise all dihedrals randomly or all dihedrals as pi
 1           ! isVlist: 1 or 0 to use Verlet lists to compute the non-bonded energy
