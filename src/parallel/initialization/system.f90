@@ -1,9 +1,9 @@
 module system
         implicit none
 
-        integer :: N, SHIFT, initRandom, isVlist, MAX_NEIGH
+        integer :: N, SHIFT, initRandom, isVlist, MAX_NEIGH, N_SWAP
         integer :: N_MCEQUI, N_MCPROD, NATTEMPTS, NSAVE
-        double precision :: TEMP, BOX, HBOX, BLEN, BANG
+        double precision :: TEMP, BOX, HBOX, BLEN, BANG, MAX_TEMP
         double precision :: EPS, SIG, MASS, RC, RV
         double precision :: maxDih
         double precision, allocatable :: R(:,:)   ! positions (3, N)

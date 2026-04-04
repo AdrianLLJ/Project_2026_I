@@ -56,6 +56,11 @@ program mainglobal
         print *, "Input broadcasted to", nproc, "replicas."
     end if
 
+    ! Distribute temperatures
+    if (nproc > 1) then
+        TEMP = TEMP * (MAX_TEMP / TEMP)**(dble(rank) / dble(nproc-1))
+    end if
+
     ! System initialization
     call allocateSystem()
     call initDihedrals()
@@ -84,7 +89,7 @@ program mainglobal
     ! Energies initialization
 
     ! MC evolution
-    call runMC(ntry, naccept)
+    call runMC(rank, nproc, ntry, naccept)
     ! write(91, *), "Final: ntry, naccept:", ntry, naccept
     ! MC evolution
 

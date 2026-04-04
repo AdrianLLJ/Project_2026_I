@@ -33,7 +33,7 @@ else ifeq ($(MODE),parallel)
     
     # Mappings
     TARGET_EXEC := $(PAR_EXEC)
-    RUN_CMD     := cd $(PAR_DIR) && mpirun -np $(NCORES) ./$(TARGET_EXEC) $(DATA_DIR) < $(INPUT_FILE)
+    RUN_CMD     := mpirun -np $(NCORES) ./$(TARGET_EXEC) $(DATA_DIR) < $(INPUT_FILE)
     CLEAN_CMD   := $(MAKE) -f src/parallel/parallel.mk clean-par 
 
 else

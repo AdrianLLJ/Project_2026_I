@@ -37,6 +37,7 @@ module mcloop
     use energy
     use system
     use io_module
+    use mpi
     implicit none
 
     double precision :: E_new, dE
@@ -44,8 +45,9 @@ module mcloop
 
     contains
 
-    subroutine runMC(ntry, naccept) 
+    subroutine runMC(rank, nproc, ntry, naccept) 
         ! Runs the basic Monte Carlo loops and stages (equilibration, production and sampling)
+        integer, intent(in) :: rank, nproc
         integer :: i, j, k, n_mcs
         integer, intent(inout) :: ntry, naccept
         double precision :: R_old(3, N), phi_old, deltaPhi, dE
@@ -72,6 +74,11 @@ module mcloop
             if ((i.ge.N_MCEQUI).and.(mod(i, NSAVE) == 0)) then
                 ! Only store config. during production (to see final configs.)
                 call writeXYZ("systemConfig.xyz", i) 
+            end if
+
+            ! Try replica exchange
+            if (mod(i, N_SWAP) == 0) then
+                call replica_exchange(rank, nproc, i)
             end if
         end do
     end subroutine
@@ -224,6 +231,92 @@ module mcloop
         close(42)
 
     end subroutine sample
+
+    subroutine replica_exchange(rank, nproc, step)
+        use nonBonded, only: new_vlist
+        implicit none
+        integer, intent(in) :: rank, nproc, step
+        integer :: partner, ierr
+        integer :: status(MPI_STATUS_SIZE)
+        double precision :: E_me, E_partner
+        double precision :: T_me, T_partner
+        double precision :: swap_prob, rnd
+        integer :: accept_swap, swap_decision
+        
+        partner = -1
+        
+        ! Determine partner safely based on step counter
+        if (mod(step/N_SWAP, 2) == 0) then
+            ! Even pairs: 0-1, 2-3, 4-5
+            if (mod(rank, 2) == 0) then
+                partner = rank + 1
+            else
+                partner = rank - 1
+            end if
+        else
+            ! Odd pairs: 1-2, 3-4, 5-6
+            if (mod(rank, 2) == 1) then
+                partner = rank + 1
+            else
+                partner = rank - 1
+            end if
+        end if
+        
+        ! Ensure boundary partners don't go out of bounds
+        if (partner >= 0 .and. partner < nproc) then
+            ! We have a valid swap pair
+            E_me = En
+            T_me = TEMP
+            
+            ! Exchange energy and temperature
+            call MPI_Sendrecv(E_me, 1, MPI_DOUBLE_PRECISION, partner, 0, &
+                              E_partner, 1, MPI_DOUBLE_PRECISION, partner, 0, &
+                              MPI_COMM_WORLD, status, ierr)
+                              
+            call MPI_Sendrecv(T_me, 1, MPI_DOUBLE_PRECISION, partner, 1, &
+                              T_partner, 1, MPI_DOUBLE_PRECISION, partner, 1, &
+                              MPI_COMM_WORLD, status, ierr)
+                              
+            ! Lower rank evaluates the Metropolis criterion
+            if (rank == min(rank, partner)) then
+                swap_prob = exp( (1.d0/T_me - 1.d0/T_partner) * (E_me - E_partner) )
+                
+                if (swap_prob >= 1.d0) then
+                    accept_swap = 1
+                else
+                    call random_number(rnd)
+                    if (rnd <= swap_prob) then
+                        accept_swap = 1
+                    else
+                        accept_swap = 0
+                    end if
+                end if
+            end if
+            
+            ! Broadcast decision to the higher rank
+            if (rank == min(rank, partner)) then
+                call MPI_Send(accept_swap, 1, MPI_INTEGER, partner, 2, MPI_COMM_WORLD, ierr)
+                swap_decision = accept_swap
+            else
+                call MPI_Recv(swap_decision, 1, MPI_INTEGER, partner, 2, MPI_COMM_WORLD, status, ierr)
+            end if
+            
+            ! If accepted, swap the state
+            if (swap_decision == 1) then
+                call MPI_Sendrecv_replace(R, 3*N, MPI_DOUBLE_PRECISION, partner, 3, partner, 3, MPI_COMM_WORLD, status, ierr)
+                if (N > 3) call MPI_Sendrecv_replace(DANG, N-3, MPI_DOUBLE_PRECISION, partner, &
+                                 4, partner, 4, MPI_COMM_WORLD, status, ierr)
+                call MPI_Sendrecv_replace(En,  1, MPI_DOUBLE_PRECISION, partner, 5, partner, 5, MPI_COMM_WORLD, status, ierr)
+                call MPI_Sendrecv_replace(Eb,  1, MPI_DOUBLE_PRECISION, partner, 6, partner, 6, MPI_COMM_WORLD, status, ierr)
+                call MPI_Sendrecv_replace(Enb, 1, MPI_DOUBLE_PRECISION, partner, 7, partner, 7, MPI_COMM_WORLD, status, ierr)
+                
+                ! Need to reconstruct the Verlet list because positions suddenly changed!
+                if (isVlist == 1) then
+                    call new_vlist()
+                end if
+            end if
+        end if
+    end subroutine replica_exchange
 end module mcloop
 
 ! Safer version of MC_step:

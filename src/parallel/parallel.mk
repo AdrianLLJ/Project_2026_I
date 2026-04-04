@@ -6,7 +6,7 @@
 FC := mpifort
 
 # Project root
-PAR_DIR := .
+PAR_DIR := src/parallel
 
 # Build directories
 BUILD_DIR := build
