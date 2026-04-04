@@ -1,0 +1,6 @@
+The current folder contains all the required modules (with variables, functions and subroutines),
+required for computing the energy of the system. 
+
+Currently, there are some other modules related to the initialisation of the system, plus a 'dummy' main program.
+Those are just for testing. I just commited them for all of you to see how the energy modules are suposed to work. 
+Otherwise, they can be deleted or I can add them to my own .gitignore for future commits. 

@@ -3,6 +3,7 @@ program mainglobal
     ! for now it just allows the sequential execution of the
     ! initialisation and the energy modules
 
+    use mpi
     ! Initialization modules (@J-dot-Barrientos)
     use io_module
     use init_config
@@ -17,27 +18,45 @@ program mainglobal
     use mcloop
 
     implicit none
-    integer :: i, nseed
+    integer :: ierr, rank, nproc
+    integer :: nseed, i
     integer, allocatable :: seed(:)
     double precision :: t1, t2
 	character(len=512) :: path_log
 
+    call MPI_Init(ierr)
+    call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+    call MPI_Comm_size(MPI_COMM_WORLD, nproc, ierr)
+
     ! Start CPU counter
     call cpu_time(t1)
 
-    ! Initialize RNG
+    ! Different RNG per replica
     call random_seed(size=nseed)
     allocate(seed(nseed))
-    !seed = 83226
     do i = 1, nseed
-        seed(i) = 14345 + i
+        seed(i) = 12345 + rank*1000 + i
     end do
     call random_seed(put=seed)
-    ! Initialize RNG
+    ! Different RNG per replica
+
+    ! IO (each replica writes in its own folder)
+    call init_io(rank)
+
+    ! Leer parámetros solo en rank 0
+    if (rank == 0) then
+        call readInput()
+    end if
+
+    ! Enviar parámetros a todos los procesos
+    call broadcastInput()
+
+    ! Verificación
+    if (rank == 0) then
+        print *, "Input broadcasted to", nproc, "replicas."
+    end if
 
     ! System initialization
-    call init_io()
-    call readInput()
     call allocateSystem()
     call initDihedrals()
     call initPolymer()
@@ -45,9 +64,9 @@ program mainglobal
     call writeXYZ("systemConfig.xyz", 0)
     ! System initialization
 
-
-    ! Open log file to write basic results of the simulation
-    path_log = get_filepath("simulation.log")
+    ! Log file for each replica
+    write(path_log, '(A,I4.4,A)') "simulation_", rank, ".log"
+    path_log = get_filepath(path_log)
     open(91, file = trim(path_log), position="append", status="unknown")
 
     ! Verlet list initialization
@@ -59,27 +78,31 @@ program mainglobal
     
     ! Energies initialization
     call shiftLenJon()
-    write(91, *) 'RC, ECUT:', RC, ECUT
+    ! write(91, *) 'RC, ECUT:', RC, ECUT
     call totEnergy(En, Eb, Enb)     
-    write(91, *), "Initial Enb, Eb, En:", Enb, Eb, En
+    ! write(91, *), "Initial Enb, Eb, En:", Enb, Eb, En
     ! Energies initialization
 
     ! MC evolution
     call runMC(ntry, naccept)
-    write(91, *), "Final: ntry, naccept:", ntry, naccept
+    ! write(91, *), "Final: ntry, naccept:", ntry, naccept
     ! MC evolution
 
     ! Test final energies and acceptance ratio
-    write(91, *) "Final running energies:", Enb, Eb, En
     call totEnergy(En, Eb, Enb)
-    write(91, *) "Final configuration energies Enb, Eb, En:", Enb, Eb, En
-    write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
+    !write(91, *) "Final Enb, Eb, En:", Enb, Eb, En
+    !write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
     ! Test final energies and acceptance ratio
 
     ! Final CPU counter
     call cpu_time(t2)
+
+    write(91, *) "Rank:", rank
+    write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
     write(91, *) "Total CPU time:", t2-t1
 
     close(91)
+
+    call MPI_Finalize(ierr)
 
 end program mainglobal
