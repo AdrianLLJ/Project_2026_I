@@ -81,8 +81,10 @@ module mcloop
             end if
 
             ! Try replica exchange
-            if (mod(i, N_SWAP) == 0) then
-                call replica_exchange(rank_world, nproc_world, num_replicas, i)
+            if (N_SWAP > 0) then
+                if (mod(i, N_SWAP) == 0) then
+                    call replica_exchange(rank_world, nproc_world, num_replicas, i)
+                end if
             end if
         end do
     end subroutine
@@ -336,7 +338,7 @@ module mcloop
                 if (num_replicas > 1) then
                     swap_prob = exp( (1.d0/T_me - 1.d0/T_partner) * (E_me - E_partner) )
                 else if (num_replicas == 1) then
-                    swap_prob = exp ((E_me - E_partner)/T_me)
+                    swap_prob = exp((E_me - E_partner) / T_me)
                 end if
                 
                 if (swap_prob >= 1.d0) then

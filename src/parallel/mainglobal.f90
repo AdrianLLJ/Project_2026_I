@@ -1,7 +1,4 @@
 program mainglobal
-    ! cooligula: this is a work in progress of the ultimate "global" main program, 
-    ! for now it just allows the sequential execution of the
-    ! initialisation and the energy modules
 
     use mpi
     ! Initialization modules (@J-dot-Barrientos)
@@ -29,6 +26,14 @@ program mainglobal
     call MPI_Comm_rank(MPI_COMM_WORLD, rank_world, ierr)
     call MPI_Comm_size(MPI_COMM_WORLD, nproc_world, ierr)
 
+    ! Leer parámetros solo en rank 0
+    if (rank_world == 0) then
+        call readInput()
+    end if
+
+    ! Enviar parámetros a todos los procesos
+    call broadcastInput()
+
     !--Hierarchical MPI setup
     num_replicas = nproc_world / nproc_per_replica
     ! 'color' identifies the replica group (0, 1, 2...)
@@ -53,16 +58,6 @@ program mainglobal
 
     ! IO (each replica writes in its own folder)
     call init_io(color)
-
-    ! Leer parámetros solo en rank 0
-    if (rank_world == 0) then
-        call readInput()
-    end if
-
-    ! Enviar parámetros a todos los procesos
-    if (rank_world == 0) then
-        call broadcastInput()
-    end if
 
     ! Verificación
     if (rank_world == 0) then

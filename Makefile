@@ -3,7 +3,7 @@
 # Global config and mode selection
 # Default mode is sequential. Override via CLI: "make MODE=parallel"
 # Default number of cores is 4. Override via CLI: "make NCORES=8"
-MODE ?= parallel
+MODE ?= sequential
 NCORES ?= 4
 
 # Build directory
