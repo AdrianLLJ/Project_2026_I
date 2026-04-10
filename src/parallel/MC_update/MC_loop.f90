@@ -48,6 +48,7 @@ module mcloop
     subroutine runMC(rank_world, nproc_world, ntry, naccept, REPLICA_COMM) 
         ! Runs the basic Monte Carlo loops and stages (equilibration, production and sampling)
         integer, intent(in) :: rank_world, nproc_world, REPLICA_COMM
+        integer :: ierr, rank_rep
         integer :: i, j, k, n_mcs
         integer, intent(inout) :: ntry, naccept
         double precision :: R_old(3, N), phi_old, deltaPhi, dE
@@ -72,7 +73,7 @@ module mcloop
             end do
             ! Sample observables during equilibration & production to track changes
             if (mod(i, NSAVE) == 0) then
-                call sample(i, rank_world, nproc_world, REPLICA_COMM)
+                call sample(i, rank_world, nproc_world)
             end if
             if ((i.ge.N_MCEQUI).and.(mod(i, NSAVE) == 0)) then
                 ! Only store config. for the master of the replica
@@ -81,7 +82,7 @@ module mcloop
 
             ! Try replica exchange
             if (mod(i, N_SWAP) == 0) then
-                call replica_exchange(rank_world, nproc_world, i, REPLICA_COMM)
+                call replica_exchange(rank_world, nproc_world, i)
             end if
         end do
     end subroutine
@@ -119,7 +120,7 @@ module mcloop
         R_old = R
         ! Check we need to recompute the Verlet list before the rotation
         if (isVlist.eq.1) then 
-            call checkUpdateVlist(k, R_old(:,k+3))
+            call checkUpdateVlist()
         end if
 
         ! Calculate local loop bounds for I = 1 to k+1
@@ -140,7 +141,7 @@ module mcloop
         do I = i_start, i_end
             if (isVlist.eq.1) then
                 ! before was k-1 as input instead of I
-                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, enI)
+                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, k, enI)
             else if (isVlist.eq.0) then
                 call enerPart(R(1, I), R(2, I), R(3, I), I, max(k, I+1), enI)
             end if
@@ -157,7 +158,7 @@ module mcloop
 
         ! Check we need to recompute the Verlet list after the rotation
         if (isVlist.eq.1) then 
-            call checkUpdateVlist(k, R(:,k+3))
+            call checkUpdateVlist()
         end if
 
         ! compute *new* torsion and non-bonded energies
@@ -165,7 +166,7 @@ module mcloop
         local_enb_new = 0.d0
         do I = i_start, i_end
             if (isVlist.eq.1) then
-                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, enI)
+                call enerPartVlist(R(1, I), R(2, I), R(3, I), I, k, enI)
             else if (isVlist.eq.0) then
                 call enerPart(R(1, I), R(2, I), R(3, I), I, max(k, I+1), enI)
             end if

@@ -46,7 +46,7 @@ program mainglobal
     call random_seed(size=nseed)
     allocate(seed(nseed))
     do i = 1, nseed
-        seed(i) = 12345 + rank*1000 + i
+        seed(i) = 12345 + rank_world*1000 + i
     end do
     call random_seed(put=seed)
     ! Different RNG per replica
@@ -55,7 +55,7 @@ program mainglobal
     call init_io(color)
 
     ! Leer parámetros solo en rank 0
-    if (rank == 0) then
+    if (rank_world == 0) then
         call readInput()
     end if
 
@@ -98,18 +98,18 @@ program mainglobal
     call shiftLenJon()
     ! write(91, *) 'RC, ECUT:', RC, ECUT
     call totEnergy(En, Eb, Enb)     
-    ! write(91, *), "Initial Enb, Eb, En:", Enb, Eb, En
+    write(91, *), "Initial Enb, Eb, En:", Enb, Eb, En
     ! Energies initialization
 
     ! MC evolution
-    call runMC(rank, nproc, ntry, naccept)
+    call runMC(rank_world, nproc_world, ntry, naccept, REPLICA_COMM)
     ! write(91, *), "Final: ntry, naccept:", ntry, naccept
     ! MC evolution
 
     ! Test final energies and acceptance ratio
     call totEnergy(En, Eb, Enb)
-    !write(91, *) "Final Enb, Eb, En:", Enb, Eb, En
-    !write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
+    ! write(91, *) "Final Enb, Eb, En:", Enb, Eb, En
+    ! write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
     ! Test final energies and acceptance ratio
 
     ! Final CPU counter
@@ -117,6 +117,7 @@ program mainglobal
 
     if (rank_rep == 0) then
         write(91, *) "Rank:", color
+        write(91, *) 'RC, ECUT:', RC, ECUT
         write(91, *) "Attempts, accepted, ratio(%):", ntry, naccept, 100.d0*naccept/ntry
         write(91, *) "Total CPU time:", t2-t1
 
